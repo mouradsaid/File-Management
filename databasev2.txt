@@ -1,0 +1,107 @@
+drop database if exists gestion_document;
+create database gestion_document;
+use gestion_document;
+
+create table userdoc(
+id int primary key auto_increment,
+nom varchar(100),
+prinom varchar(100),
+isadmin varchar(20), -- 58987
+statut varchar(5),
+nameuser varchar(300),
+passworduser varchar(10000),
+passworduserPD varchar(100),
+timeu datetime
+);
+
+create table document(
+id int primary key auto_increment,
+ref varchar(1000),
+idusr int,
+titreDoc varchar(200),
+typeDoc varchar(100),
+nameDoc varchar(200),
+localisationDoc varchar(10),
+timeF datetime,
+constraint t1 foreign key (idusr) references userdoc(id) on delete set null
+);
+
+
+create table archiveDocument(
+id int primary key auto_increment,
+ref varchar(1000),
+idusr int,
+titreDoc varchar(200),
+typeDoc varchar(100),
+nameDoc varchar(200),
+localisationDoc varchar(10),
+timeF datetime,
+constraint t2 foreign key (idusr) references userdoc(id) on delete set null
+);
+
+create table tagsInput(
+id int,
+typeTags varchar(8000),
+localisationTags varchar(8000)
+);
+
+delimiter $
+create trigger tr_after_document before insert on document for each row
+begin
+declare var1 int default null;
+declare var2 int default null;
+select count(*) into var2 from document;
+if var2>0 then
+select id into var1 from document order by id desc limit 1;
+set NEW.ref=concat("AOGED",lpad(var1+1,4,"0"));
+else
+set NEW.ref=concat("AOGED",lpad(1,4,"0"));
+end if;
+end $
+delimiter ;
+
+insert into tagsInput(id,typeTags,localisationTags) values 
+(1,'PRO_adminitration,santé,banque,job_candidature,job,pro','MA,FR');
+
+insert into userdoc(nom,prinom,isadmin,nameuser,passworduser,passworduserPD,timeu) values 
+('admin','admin','ok','AOADMIN','$2y$10$Bq9zeEPi0HxqNFEi/eGtMu2EY2yQ8BrXZIWGTxoPIvrFusPvyvAtK','',now());
+
+insert into document(nameDoc,idusr,titreDoc,typeDoc,localisationDoc,timeF) values 
+('guyhg',1,'titre1','PRO_adminitration','FR',now()),
+('guyhg',1,'titre1','PRO_adminitration','FR',now()),
+('guyhg',1,'titre1','PRO_adminitration','FR',now()),
+('guyhg',1,'titre1','PRO_adminitration','FR',now()),
+('guyhg',1,'titre1','PRO_adminitration','FR',now());
+
+delimiter $
+create procedure ps_archiveDC(iddc int)
+begin
+declare vref varchar(1000);
+declare vidusr int;
+declare vtitreDoc varchar(200);
+declare vtypeDoc varchar(100);
+declare vnameDoc varchar(200);
+declare vlocalisationDoc varchar(10);
+declare vtimeF datetime;
+select ref,idusr,titreDoc,typeDoc,nameDoc,localisationDoc,timeF into vref,vidusr,vtitreDoc,vtypeDoc,vnameDoc,vlocalisationDoc,vtimeF from document where id=iddc;
+insert into archiveDocument(ref,nameDoc,idusr,titreDoc,typeDoc,localisationDoc,timeF) value (vref,vnameDoc,vidusr,vtitreDoc,vtypeDoc,vlocalisationDoc,vtimeF);
+delete from document where id=iddc;
+end$
+delimiter ;
+
+
+delimiter $
+create procedure ps_unarchiveDC(iddc int)
+begin
+declare vref varchar(1000);
+declare vidusr int;
+declare vtitreDoc varchar(200);
+declare vtypeDoc varchar(100);
+declare vnameDoc varchar(200);
+declare vlocalisationDoc varchar(10);
+declare vtimeF datetime;
+select ref,idusr,titreDoc,typeDoc,nameDoc,localisationDoc,timeF into vref,vidusr,vtitreDoc,vtypeDoc,vnameDoc,vlocalisationDoc,vtimeF from archiveDocument where id=iddc;
+insert into document(ref,nameDoc,idusr,titreDoc,typeDoc,localisationDoc,timeF) value (vref,vnameDoc,vidusr,vtitreDoc,vtypeDoc,vlocalisationDoc,vtimeF);
+delete from archiveDocument where id=iddc;
+end$
+delimiter ;

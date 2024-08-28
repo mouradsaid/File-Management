@@ -1,0 +1,2 @@
+user admin :AOADMIN
+password :aoGED2020*$*
